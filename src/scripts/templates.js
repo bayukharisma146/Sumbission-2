@@ -18,6 +18,7 @@ export function generateLoaderAbsoluteTemplate() {
 export function generateMainNavigationListTemplate() {
   return `
     <li><a id="story-list-button" class="story-list-button" href="#/">LIST YOUR STORY</a></li>
+        <li><a id="bookmark-button" class="bookmark-button" href="#/bookmark">BOOKMARK</a></li>
   `;
 }
 
@@ -65,6 +66,7 @@ export function generateReportItemTemplate({
   createdAt,
   lat,
   lon,
+  showRemoveButton = false, // default false
 }) {
   const truncateDescription = (text, maxLength = 100) => {
     if (!text) return 'Tidak ada deskripsi.';
@@ -103,6 +105,10 @@ export function generateReportItemTemplate({
             Dibuat oleh: ${name || 'Pengguna Anonim'}
           </div>
         </div>
+        ${showRemoveButton
+          ? `<button class="remove-bookmark-button" data-id="${id}">Hapus Bookmark</button>`
+          : ''
+        }
         <a class="btn story-item__read-more" href="#/stories/${id}">
           Selengkapnya <i class="fas fa-arrow-right"></i>
         </a>

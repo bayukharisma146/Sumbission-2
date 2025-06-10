@@ -1,25 +1,38 @@
-const STORAGE_KEY = 'BOOKMARKED_STORIES';
+import { openDB } from 'idb';
+
+const DB_NAME = 'bookmark-db';
+const STORE_NAME = 'bookmarks';
+
+async function getDB() {
+  return openDB(DB_NAME, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    },
+  });
+}
 
 const BookmarkStorage = {
-  getAllBookmarks() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  async getAllBookmarks() {
+    const db = await getDB();
+    return db.getAll(STORE_NAME);
   },
 
-  saveBookmark(story) {
-    const bookmarks = this.getAllBookmarks();
-    bookmarks.push(story);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+  async saveBookmark(story) {
+    const db = await getDB();
+    await db.put(STORE_NAME, story);
   },
 
-  removeBookmark(storyId) {
-    const bookmarks = this.getAllBookmarks();
-    const filteredBookmarks = bookmarks.filter((story) => story.id !== storyId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredBookmarks));
+  async removeBookmark(storyId) {
+    const db = await getDB();
+    await db.delete(STORE_NAME, storyId);
   },
 
-  isBookmarked(storyId) {
-    const bookmarks = this.getAllBookmarks();
-    return bookmarks.some((story) => story.id === storyId);
+  async isBookmarked(storyId) {
+    const db = await getDB();
+    const story = await db.get(STORE_NAME, storyId);
+    return !!story;
   },
 };
 

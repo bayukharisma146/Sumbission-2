@@ -13,6 +13,7 @@ import ReportDetailPresenter from './report-detail-presenter';
 import { parseActivePathname } from '../../routes/url-parser';
 import Map from '../../utils/map';
 import * as RuangKisahAPI from '../../data/api';
+import { Database } from './database.js';
 
 export default class ReportDetailPage {
   #state = {
@@ -102,6 +103,7 @@ export default class ReportDetailPage {
     this.#state.presenter = new ReportDetailPresenter(parseActivePathname().id, {
       view: this,
       apiModel: RuangKisahAPI,
+      dbModel: Database,
     });
   }
 
@@ -213,11 +215,26 @@ export default class ReportDetailPage {
   renderSaveButton() {
     document.getElementById('save-actions-container').innerHTML =
       generateSaveReportButtonTemplate();
+
+    document.getElementById('report-detail-save').addEventListener('click', async () => {
+      try {
+        await this.#state.presenter.saveReport();
+        alert('Laporan berhasil disimpan ke bookmark!');
+        // Jika ingin mengganti tombol, bisa panggil showSaveButton atau renderRemoveButton di sini
+        // await this.#state.presenter.showSaveButton();
+      } catch (error) {
+        alert('Gagal menyimpan laporan!');
+      }
+    });
   }
 
   renderRemoveButton() {
     document.getElementById('save-actions-container').innerHTML =
       generateRemoveReportButtonTemplate();
+
+    document.getElementById('report-detail-remove')?.addEventListener('click', async () => {
+      alert('Fitur simpan laporan akan segera hadir!');
+    });
   }
 
   addNotifyMeEventListener() {

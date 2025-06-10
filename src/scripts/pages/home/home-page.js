@@ -8,6 +8,7 @@ import {
 import HomePresenter from './home-presenter';
 import Map from '../../utils/map'; // Utilitas Peta Anda
 import * as StoryAPI from '../../data/api'; // Menggunakan alias yang lebih sesuai
+import BookmarkStorage from '../../data/bookmark-storage'; // Pastikan import BookmarkStorage
 
 export default class HomePage {
   #presenter = null;
@@ -23,12 +24,15 @@ export default class HomePage {
         </div>
       </section>
 
-      <section class="container" style="background-color: #0E2148; color: #E3D095; padding: 2rem; border-radius: 12px;">
-  <h1 class="section-title" style="color: #E3D095; text-align: center;">LIST YOUR STORY</h1>
-
-  <div class="stories-list__container" style="background-color: #483AA0; padding: 1rem; border-radius: 8px;">
-    <div id="stories-list"></div> 
-    <div id="stories-list-loading-container" style="margin-top: 1rem; text-align: center; color: #7965C1;"></div>
+      <section class="container">
+  <h1 class="section-title">LIST YOUR STORY</h1>
+  <div class="stories-list__container">
+    <div id="stories-list"></div>
+    <div id="stories-list-loading-container"></div>
+  </div>
+  <h1 class="section-title" style="margin-top:2rem;">CERITA TERSIMPAN</h1>
+  <div class="stories-list__container">
+    <div id="bookmarks-container"></div>
   </div>
 </section>
 
@@ -42,6 +46,7 @@ export default class HomePage {
     });
 
     await this.#presenter.initialGalleryAndMap();
+    this.populateBookmarks(); // Panggil populateBookmarks saat afterRender
   }
 
   populateStoriesList(stories) {
@@ -174,5 +179,80 @@ export default class HomePage {
     if (storiesListLoadingContainer) {
       storiesListLoadingContainer.innerHTML = '';
     }
+  }
+
+  async populateBookmarks() {
+    const bookmarksContainer = document.getElementById('bookmarks-container');
+    const bookmarks = await BookmarkStorage.getAllBookmarks(); // pakai await
+
+    if (!bookmarks || bookmarks.length === 0) {
+      bookmarksContainer.innerHTML = generateReportsListEmptyTemplate(
+        'Anda belum menyimpan cerita apapun.',
+      );
+      return;
+    }
+
+    const rows = bookmarks.reduce((acc, story, index) => {
+      const rowIndex = Math.floor(index / 3);
+      if (!acc[rowIndex]) acc[rowIndex] = [];
+      acc[rowIndex].push(
+        generateReportItemTemplate({
+          id: story.id,
+          name: story.name,
+          description: story.description,
+          photoUrl: story.photoUrl,
+          createdAt: story.createdAt,
+          lat: story.lat,
+          lon: story.lon,
+          isBookmarked: true,
+        })
+      );
+      return acc;
+    }, []);
+
+    const htmlContent = rows
+      .map(
+        (row) => `
+      <div class="stories-row">
+        ${row
+          .map(
+            (story) => `
+          <div class="story-column">
+            ${story}
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `
+      )
+      .join('');
+
+    bookmarksContainer.innerHTML = `
+    <div class="stories-grid">
+      ${htmlContent}
+    </div>
+  `;
+
+    // Event hapus bookmark
+    const storiesGrid = bookmarksContainer.querySelector('.stories-grid');
+    storiesGrid.addEventListener('click', (event) => {
+      const removeButton = event.target.closest('.remove-bookmark-button');
+      if (removeButton) {
+        event.preventDefault();
+        const storyId = removeButton.dataset.id;
+        const storyItem = event.target.closest('.story-column');
+        BookmarkStorage.removeBookmark(storyId);
+        if (storyItem) {
+          storyItem.remove();
+        }
+        const remainingBookmarks = BookmarkStorage.getAllBookmarks();
+        if (remainingBookmarks.length === 0) {
+          bookmarksContainer.innerHTML = generateReportsListEmptyTemplate(
+            'Anda belum menyimpan cerita apapun.',
+          );
+        }
+      }
+    });
   }
 }

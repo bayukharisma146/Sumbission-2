@@ -1,12 +1,12 @@
 import BookmarkStorage from '../../data/bookmark-storage';
 import { generateReportItemTemplate, generateReportsListEmptyTemplate } from '../../templates';
 
+
 export default class BookmarkPage {
   async render() {
     return `
       <section class="container" style="background-color: #0E2148; color: #E3D095; padding: 2rem; border-radius: 12px;">
-        <h1 class="section-title" style="color: #E3D095; text-align: center;">CERITA TERSIMPAN</h1>
-
+        <h1 class="section-title" style="color: #E3D095; text-align: center;">BOOKMARK</h1>
         <div class="stories-list__container" style="background-color: #483AA0; padding: 1rem; border-radius: 8px;">
           <div id="bookmarks-container"></div>
         </div>
@@ -16,9 +16,8 @@ export default class BookmarkPage {
 
   async afterRender() {
     const bookmarksContainer = document.getElementById('bookmarks-container');
-    const bookmarks = BookmarkStorage.getAllBookmarks();
+    const bookmarks = await BookmarkStorage.getAllBookmarks(); // pakai await
 
-    // Tampilkan jika tidak ada bookmark
     if (!bookmarks || bookmarks.length === 0) {
       bookmarksContainer.innerHTML = generateReportsListEmptyTemplate(
         'Anda belum menyimpan cerita apapun.',
@@ -26,28 +25,25 @@ export default class BookmarkPage {
       return;
     }
 
-    // Susun bookmarks ke dalam baris per 3 kolom
+    // Susun bookmarks ke dalam grid
     const rows = bookmarks.reduce((acc, story, index) => {
       const rowIndex = Math.floor(index / 3);
-
       if (!acc[rowIndex]) acc[rowIndex] = [];
-
-      const storyHtml = generateReportItemTemplate({
-        id: story.id,
-        name: story.name,
-        description: story.description,
-        photoUrl: story.photoUrl,
-        createdAt: story.createdAt,
-        lat: story.lat,
-        lon: story.lon,
-        isBookmarked: true, // kalau template-nya pakai indikator bookmark
-      });
-
-      acc[rowIndex].push(storyHtml);
+      acc[rowIndex].push(
+        generateReportItemTemplate({
+          id: story.id,
+          name: story.name,
+          description: story.description,
+          photoUrl: story.photoUrl,
+          createdAt: story.createdAt,
+          lat: story.lat,
+          lon: story.lon,
+          showRemoveButton: true, // <--- tambahkan ini
+        }),
+      );
       return acc;
     }, []);
 
-    // Gabungkan baris ke HTML grid
     const htmlContent = rows
       .map(
         (row) => `
@@ -72,33 +68,24 @@ export default class BookmarkPage {
       </div>
     `;
 
-    // Delegasi event untuk tombol hapus bookmark
+    // Setelah bookmarksContainer.innerHTML = ...;
     const storiesGrid = bookmarksContainer.querySelector('.stories-grid');
-    storiesGrid.addEventListener('click', (event) => {
-      const removeButton = event.target.closest('.remove-bookmark-button');
-
-      if (removeButton) {
-        event.preventDefault();
-        const storyId = removeButton.dataset.id;
-        const storyItem = event.target.closest('.story-column');
-
-        // Hapus dari penyimpanan
-        BookmarkStorage.removeBookmark(storyId);
-
-        // Hapus dari DOM
-        if (storyItem) {
-          storyItem.remove();
+    if (storiesGrid) {
+      storiesGrid.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('.remove-bookmark-button');
+        if (removeButton) {
+          event.preventDefault();
+          const storyId = removeButton.dataset.id;
+          BookmarkStorage.removeBookmark(storyId);
+          // Hapus dari DOM
+          const storyItem = removeButton.closest('.story-column');
+          if (storyItem) storyItem.remove();
+          // Jika kosong, tampilkan pesan
+          if (BookmarkStorage.getAllBookmarks().length === 0) {
+            bookmarksContainer.innerHTML = generateReportsListEmptyTemplate('Anda belum menyimpan cerita apapun.');
+          }
         }
-
-        // Tampilkan pesan jika kosong
-        const remainingBookmarks = BookmarkStorage.getAllBookmarks();
-        if (remainingBookmarks.length === 0) {
-          bookmarksContainer.innerHTML = generateReportsListEmptyTemplate(
-            'Anda belum menyimpan cerita apapun.',
-          );
-        }
-      }
-    });
+      });
+    }
   }
-  
 }

@@ -3,6 +3,7 @@
 import { parseActivePathname } from '../../routes/url-parser';
 import StoryDetailPresenter from './story-detail-presenter';
 import * as StoryAPI from '../../data/api';
+import BookmarkStorage from '../../data/bookmark-storage';
 
 import {
   generateLoaderAbsoluteTemplate,
@@ -78,12 +79,11 @@ export default class StoryDetailPage {
             lat: story.lat,
             lon: story.lon,
           };
-          const { default: BookmarkStorage } = await import('../../utils/bookmark');
-          BookmarkStorage.addBookmark(bookmarkData);
+          await BookmarkStorage.saveBookmark(bookmarkData);
           alert('✅ Cerita berhasil ditambahkan ke bookmark!');
         } catch (error) {
-          console.error('Gagal menambahkan bookmark:', error);
           alert('❌ Gagal menambahkan bookmark.');
+          console.error(error);
         }
       });
     }

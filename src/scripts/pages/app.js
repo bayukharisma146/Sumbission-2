@@ -88,7 +88,11 @@ export default class App {
         });
       }
     } else {
-      navListMain.innerHTML = '';
+      navListMain.innerHTML = `
+        <li><a href="#/">LIST YOUR STORY</a></li>
+        <li><a href="#/bookmark">BOOKMARK</a></li>
+        <!-- menu lain -->
+      `;
       navListAuth.innerHTML = generateUnauthenticatedNavigationListTemplate();
     }
 

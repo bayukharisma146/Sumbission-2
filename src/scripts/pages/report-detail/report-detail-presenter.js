@@ -1,13 +1,16 @@
 import { reportMapper } from '../../data/api-mapper';
+
 export default class ReportDetailPresenter {
   #reportId;
   #view;
   #apiModel;
+  #dbModel;
 
-  constructor(reportId, { view, apiModel }) {
+  constructor(reportId, { view, apiModel, dbModel }) {
     this.#reportId = reportId;
     this.#view = view;
     this.#apiModel = apiModel;
+    this.#dbModel = dbModel;
   }
 
   async showReportDetailMap() {
@@ -36,7 +39,8 @@ export default class ReportDetailPresenter {
       console.log(report); // for debugging purpose, remove after checking it
       this.#view.populateReportDetailAndInitialMap(response.message, report);
 
-      this.#view.populateReportDetailAndInitialMap(response.message, response.data);
+      // Optional: jika ingin pakai data mentah juga
+      // this.#view.populateReportDetailAndInitialMap(response.message, response.data);
     } catch (error) {
       console.error('showReportDetailAndMap: error:', error);
       this.#view.populateReportDetailError(error.message);
@@ -95,7 +99,7 @@ export default class ReportDetailPresenter {
       console.error('notifyReportOwner: error:', error);
     }
   }
-  
+
   async notifyMe() {
     try {
       const response = await this.#apiModel.sendReportToMeViaNotification(this.#reportId);
@@ -109,16 +113,26 @@ export default class ReportDetailPresenter {
     }
   }
 
-  showSaveButton() {
-    if (this.#isReportSaved()) {
+  async saveReport() {
+    try {
+      const report = await this.#apiModel.getReportById(this.#reportId);
+      await this.#dbModel.putReport(report.data);
+      this.#view.saveToBookmarkSuccessfully('Success to save to bookmark');
+    } catch (error) {
+      console.error('saveReport: error:', error);
+      this.#view.saveToBookmarkFailed(error.message);
+    }
+  }
+
+  async showSaveButton() {
+    if (await this.#isReportSaved()) {
       this.#view.renderRemoveButton();
       return;
     }
-
     this.#view.renderSaveButton();
   }
 
-  #isReportSaved() {
-    return false;
+  async #isReportSaved() {
+    return !!(await this.#dbModel.getReportById(this.#reportId));
   }
 }
